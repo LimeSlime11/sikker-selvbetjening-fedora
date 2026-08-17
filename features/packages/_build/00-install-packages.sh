@@ -5,31 +5,52 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PKG_FILE="${SCRIPT_DIR}/packages.txt"
 FLATPAK_FILE="${SCRIPT_DIR}/flatpaks.txt"
 
-# 1. Enable DNF speed optimizations
-echo "max_parallel_downloads=10" >> /etc/dnf/dnf.conf
-echo "fastestmirror=True" >> /etc/dnf/dnf.conf
+# 1. Configure DNF5
+cat >> /etc/dnf/dnf.conf <<'EOF'
+max_parallel_downloads=10
+fastestmirror=True
+EOF
 
-# 2. Install essential RPM base packages using dnf5 --pkg-file
-if [ -f "${PKG_FILE}" ]; then
+# 2. Install RPM packages
+if [[ -f "${PKG_FILE}" ]]; then
     echo "📦 Installing essential RPM packages..."
-    dnf5 --pkg-file="${PKG_FILE}" install -y --nodocs
+
+    mapfile -t packages < <(
+        grep -vE '^[[:space:]]*(#|$)' "${PKG_FILE}"
+    )
+
+    if ((${#packages[@]})); then
+        dnf5 install -y --nodocs "${packages[@]}"
+    fi
+
     dnf5 clean all
+
     echo "  ✓ Base RPM installation complete."
 fi
 
 # 3. Enable system services
-systemctl enable cups
-systemctl enable --force sddm
+systemctl enable cups.service
+systemctl enable sddm.service
 
-# 4. Add Flathub repository and pre-install user applications
+# 4. Configure Flathub
 echo "🌐 Setting up Flathub remote..."
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
-if [ -f "${FLATPAK_FILE}" ]; then
+flatpak remote-add \
+    --if-not-exists \
+    --system \
+    flathub \
+    https://dl.flathub.org/repo/flathub.flatpakrepo
+
+# 5. Install Flatpak applications
+if [[ -f "${FLATPAK_FILE}" ]]; then
     echo "📦 Pre-installing Flatpak applications..."
-    grep -v '^#' "${FLATPAK_FILE}" | grep -v '^\s*$' | while read -r app; do \
+
+    while IFS= read -r app; do
         echo "  → Installing Flatpak: ${app}"
         flatpak install -y --system flathub "${app}"
-    done
+    done < <(
+        grep -vE '^[[:space:]]*(#|$)' "${FLATPAK_FILE}"
+    )
+
     echo "  ✓ Flatpak installation complete."
 fi
