@@ -20,7 +20,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build Container Image
+      # Log in FIRST so buildah can pull/push cache layers from GHCR
+      - name: Log in to GitHub Container Registry
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Container Image with Caching
         uses: redhat-actions/buildah-build@v2
         id: build-image
         with:
@@ -28,13 +36,10 @@ jobs:
           tags: latest ${{ github.sha }}
           containerfiles: |
             ./Containerfile
-
-      - name: Log in to GitHub Container Registry
-        uses: redhat-actions/podman-login@v1
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          # Pull existing layers from GHCR cache image if available
+          cache-from: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:build-cache
+          # Export build layers to GHCR cache image for future runs
+          cache-to: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:build-cache
 
       - name: Push to GHCR
         uses: redhat-actions/push-to-registry@v2
