@@ -1,0 +1,8 @@
+# Desktop Environment & Display Manager
+@kde-desktop-environment
+sddm
+
+# System Services & Printer Drivers
+cups
+system-config-printer
+flatpak

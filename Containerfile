@@ -1,24 +1,23 @@
 # Pull directly from official Fedora infrastructure
 FROM quay.io/fedora/fedora-bootc:latest
 
-# Switch shell to bash with strict error handling
 SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
 
-# 1. Enable DNF parallel downloads and disable documentation to speed up installs & save space
-# 2. Install minimal KDE Plasma desktop and necessary library services in a single cached layer
-RUN echo "max_parallel_downloads=10" >> /etc/dnf/dnf.conf && \
-    echo "fastestmirror=True" >> /etc/dnf/dnf.conf && \
-    dnf install -y --nodocs \
-        @kde-desktop-environment \
-        sddm \
-        cups \
-        system-config-printer \
-        firefox && \
-    dnf clean all
+# 1. Copy all '_system' overlay folders into root
+RUN --mount=type=bind,source=features,target=/tmp/features \
+    find /tmp/features -type d -name "_system" | while read -r sysdir; do \
+        echo "📂 Copying system files from ${sysdir}..."; \
+        cp -av "${sysdir}/." /; \
+    done && \
+    find /usr/libexec /usr/bin /usr/local/bin -type f -name "*.sh" -exec chmod +x {} + 2>/dev/null || true
 
-# Enable services
-RUN systemctl enable cups && \
-    systemctl enable --force sddm
-
-# Pre-configure Flathub for sandboxed applications (LibreOffice, etc.)
-RUN flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+# 2. Make all '_build' scripts executable, then run them sequentially
+RUN --mount=type=bind,source=features,target=/tmp/features \
+    --mount=type=cache,target=/var/cache \
+    --mount=type=cache,target=/var/log \
+    --mount=type=tmpfs,target=/tmp \
+    find /tmp/features -type f -path "*/_build/*.sh" -exec chmod +x {} + && \
+    find /tmp/features -type f -path "*/_build/*.sh" | sort | while read -r script; do \
+        echo "🚀 Running build script: $(basename "$script")"; \
+        bash "$script" || exit 1; \
+    done

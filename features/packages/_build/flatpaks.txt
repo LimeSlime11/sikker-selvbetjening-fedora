@@ -1,0 +1,6 @@
+# Web Browsers
+org.mozilla.firefox
+
+# Media & Productivity
+org.videolan.VLC
+org.libreoffice.LibreOffice
