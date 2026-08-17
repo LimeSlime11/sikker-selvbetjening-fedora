@@ -8,8 +8,7 @@ RUN --mount=type=bind,source=features,target=/tmp/features \
     find /tmp/features -type d -name "_system" | while read -r sysdir; do \
         echo "📂 Copying system files from ${sysdir}..."; \
         cp -av "${sysdir}/." /; \
-    done && \
-    find /usr/libexec /usr/bin /usr/local/bin -type f -name "*.sh" -exec chmod +x {} + 2>/dev/null || true
+    done 
 
 # 2. Make all '_build' scripts executable, then run them sequentially
 RUN --mount=type=bind,source=features,target=/tmp/features \
