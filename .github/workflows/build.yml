@@ -1,19 +1,16 @@
-name: Build and Push Custom Kinoite Image
+name: Build and Push Container Image
 
 on:
-  schedule:
-    - cron: '0 0 * * 0' # Build automatically every Sunday at midnight
   push:
     branches:
       - main
-  workflow_dispatch: # Allows manual trigger from GitHub UI
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build:
+  build-container:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -23,7 +20,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up QEMU / Buildah
+      - name: Build Container Image
         uses: redhat-actions/buildah-build@v2
         id: build-image
         with:
