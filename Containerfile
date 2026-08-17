@@ -1,15 +1,20 @@
-# Start from the official Fedora Kinoite base image
-FROM quay.io/fedora-ostree-desktops/kinoite:latest
+# Pull directly from official Fedora infrastructure
+FROM quay.io/fedora/fedora-bootc:latest
 
-# Install system-level utilities (e.g., cups for printing, extra drivers)
+# Install minimal KDE Plasma desktop and necessary library services
 RUN dnf install -y \
+    @kde-desktop-environment \
+    sddm \
     cups \
     system-config-printer \
-    vim \
+    firefox \
     && dnf clean all
 
-# Copy custom configurations (e.g., KDE Kiosk settings or custom scripts)
-# COPY config/kdeglobals /etc/xdg/kdeglobals
+# Enable KDE's Display Manager as default
+RUN systemctl enable sddm
 
-# Ensure Flatpak remotes are configured for users
+# Enable printing service
+RUN systemctl enable cups
+
+# Pre-configure Flathub for sandboxed applications (LibreOffice, etc.)
 RUN flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
