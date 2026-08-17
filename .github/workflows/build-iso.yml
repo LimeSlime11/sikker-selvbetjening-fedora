@@ -24,19 +24,29 @@ jobs:
         run: |
           echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
-      # Convert GHCR Container Image to Anaconda ISO using @main
-      - name: Build ISO using Bootc Image Builder
-        id: build-iso
-        uses: osbuild/bootc-image-builder-action@main
-        with:
-          image: ghcr.io/${{ env.IMAGE_NAME }}:${{ github.event.inputs.image_tag }}
-          types: |
-            anaconda-iso
+      # Create output directory for ISO
+      - name: Prepare Output Directory
+        run: mkdir -p ./output
+
+      # Run bootc-image-builder directly via Podman
+      - name: Build ISO with Bootc Image Builder
+        run: |
+          sudo podman run \
+            --rm \
+            --privileged \
+            --security-opt label=type:unconfined_t \
+            -v /var/lib/containers/storage:/var/lib/containers/storage \
+            -v $(pwd)/output:/output \
+            quay.io/centos-bootc/bootc-image-builder:latest \
+            build \
+            --output /output \
+            --type anaconda-iso \
+            ghcr.io/${{ env.IMAGE_NAME }}:${{ github.event.inputs.image_tag }}
 
       # Upload the generated ISO file as a GitHub Artifact
       - name: Upload ISO Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Kinoite-Library-ISO-${{ github.event.inputs.image_tag }}
-          path: ${{ steps.build-iso.outputs.output-directory }}
+          path: ./output
           if-no-files-found: error
