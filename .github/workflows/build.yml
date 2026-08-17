@@ -7,7 +7,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-container:
@@ -20,7 +19,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Log in FIRST so buildah can pull/push cache layers from GHCR
+      # Convert repository name to strictly lowercase to prevent OCI naming warnings
+      - name: Set Lowercase Image Name
+        run: |
+          echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Log in to GitHub Container Registry
         uses: redhat-actions/podman-login@v1
         with:
@@ -28,18 +31,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Upgraded to v3 and using extra-args for Buildah layer caching
       - name: Build Container Image with Caching
-        uses: redhat-actions/buildah-build@v2
+        uses: redhat-actions/buildah-build@v3
         id: build-image
         with:
           image: ${{ env.IMAGE_NAME }}
           tags: latest ${{ github.sha }}
           containerfiles: |
             ./Containerfile
-          # Pull existing layers from GHCR cache image if available
-          cache-from: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:build-cache
-          # Export build layers to GHCR cache image for future runs
-          cache-to: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:build-cache
+          extra-args: |
+            --cache-from=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:build-cache
+            --cache-to=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:build-cache
 
       - name: Push to GHCR
         uses: redhat-actions/push-to-registry@v2
