@@ -28,6 +28,19 @@ jobs:
       - name: Prepare Output Directory
         run: mkdir -p ./output
 
+      # Log in to GHCR so Podman can pull private or package-restricted container images
+      - name: Log in to GitHub Container Registry
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Pre-pull the target image into podman container storage
+      - name: Pre-pull Target Image
+        run: |
+          sudo podman pull ghcr.io/${{ env.IMAGE_NAME }}:${{ github.event.inputs.image_tag }}
+
       # Run bootc-image-builder directly via Podman
       - name: Build ISO with Bootc Image Builder
         run: |
