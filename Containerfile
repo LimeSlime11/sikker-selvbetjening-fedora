@@ -10,9 +10,6 @@ RUN dnf install -y \
     firefox \
     && dnf clean all
 
-# Enable KDE's Display Manager as default
-RUN systemctl enable sddm
-
 # Enable printing service
 RUN systemctl enable cups
 
