@@ -1,0 +1,37 @@
+name: Generate Bootable ISO (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Container image tag to convert to ISO'
+        required: true
+        default: 'latest'
+
+jobs:
+  generate-iso:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 1. Convert existing GHCR Container Image to Anaconda ISO
+      - name: Build ISO using Bootc Image Builder
+        id: build-iso
+        uses: osbuild/bootc-image-builder-action@v1
+        with:
+          image: ghcr.io/${{ github.repository }}:${{ github.event.inputs.image_tag }}
+          types: |
+            anaconda-iso
+
+      # 2. Upload the ISO file as a downloadable GitHub Artifact
+      - name: Upload ISO Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kinoite-Library-ISO-${{ github.event.inputs.image_tag }}
+          path: ${{ steps.build-iso.outputs.output-directory }}
+          if-no-files-found: error
