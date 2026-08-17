@@ -30,7 +30,6 @@ fi
 
 # 3. Enable system services
 systemctl enable cups.service
-systemctl enable sddm.service
 
 # 4. Configure Flathub
 echo "🌐 Setting up Flathub remote..."
