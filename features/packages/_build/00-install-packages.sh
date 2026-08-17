@@ -9,10 +9,10 @@ FLATPAK_FILE="${SCRIPT_DIR}/flatpaks.txt"
 echo "max_parallel_downloads=10" >> /etc/dnf/dnf.conf
 echo "fastestmirror=True" >> /etc/dnf/dnf.conf
 
-# 2. Install essential RPM base packages
+# 2. Install essential RPM base packages using dnf5 --pkg-file
 if [ -f "${PKG_FILE}" ]; then
     echo "📦 Installing essential RPM packages..."
-    dnf5 install -y --nodocs --pkg-file "${PKG_FILE}"
+    dnf5 --pkg-file="${PKG_FILE}" install -y --nodocs
     dnf5 clean all
     echo "  ✓ Base RPM installation complete."
 fi
