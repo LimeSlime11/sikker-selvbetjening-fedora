@@ -28,7 +28,7 @@ jobs:
       - name: Prepare Output Directory
         run: mkdir -p ./output
 
-      # Log in to GHCR so Podman can pull private or package-restricted container images
+      # Log in to GHCR so Podman can pull the container image
       - name: Log in to GitHub Container Registry
         uses: redhat-actions/podman-login@v1
         with:
@@ -41,7 +41,7 @@ jobs:
         run: |
           sudo podman pull ghcr.io/${{ env.IMAGE_NAME }}:${{ github.event.inputs.image_tag }}
 
-      # Run bootc-image-builder directly via Podman
+      # Run bootc-image-builder with Btrfs root filesystem
       - name: Build ISO with Bootc Image Builder
         run: |
           sudo podman run \
@@ -54,6 +54,7 @@ jobs:
             build \
             --output /output \
             --type anaconda-iso \
+            --rootfs btrfs \
             ghcr.io/${{ env.IMAGE_NAME }}:${{ github.event.inputs.image_tag }}
 
       # Upload the generated ISO file as a GitHub Artifact
