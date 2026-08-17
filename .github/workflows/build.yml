@@ -31,7 +31,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Upgraded to v3 and using extra-args for Buildah layer caching
+      # Using native buildah layer caching
       - name: Build Container Image with Caching
         uses: redhat-actions/buildah-build@v3
         id: build-image
@@ -40,9 +40,7 @@ jobs:
           tags: latest ${{ github.sha }}
           containerfiles: |
             ./Containerfile
-          extra-args: |
-            --cache-from=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:build-cache
-            --cache-to=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:build-cache
+          layers: true
 
       - name: Push to GHCR
         uses: redhat-actions/push-to-registry@v2
